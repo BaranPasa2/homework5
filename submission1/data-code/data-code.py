@@ -89,16 +89,16 @@ df_merged["expanded"] = df_merged.apply(
 )
 
 # Group by year and expansion status, summing ins_direct
-df_grouped = df_merged.groupby(["year", "expanded"])["ins_direct"].sum().reset_index()
+df_grouped = df_merged.groupby(["year", "expanded"])["uninsured"].sum().reset_index()
 
 # Pivot to get columns for plotting
-df_pivot = df_grouped.pivot(index="year", columns="expanded", values="ins_direct")
+df_pivot = df_grouped.pivot(index="year", columns="expanded", values="uninsured")
 
 # Plotting
 plt.figure(figsize=(10, 6))
 df_pivot.plot(marker='o', linewidth=2)
-plt.title("Direct-Purchase Insurance Over Time")
-plt.ylabel("Total Direct Insurance (ins_direct)")
+plt.title("Uninsured Population Relative to Medicaid Expansion")
+plt.ylabel("Total Uninsured")
 plt.xlabel("Year")
 plt.grid(True)
 plt.tight_layout()
