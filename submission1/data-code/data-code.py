@@ -80,7 +80,7 @@ df_exp = df_exp[["State", "expand_year"]]
 
 # Merge with insurance data
 df_merged = pd.merge(df_ins, df_exp, on="State", how="left")
-
+df_merged = pd.merge(df_merged, insur_totals[['year', 'yearly_total']], on="year", how='left')
 # Label whether a state was expanded that year or not
 df_merged["expanded"] = df_merged.apply(
     lambda row: "Expansion" if pd.notna(row["expand_year"]) and row["year"] >= row["expand_year"]
@@ -88,11 +88,13 @@ df_merged["expanded"] = df_merged.apply(
     axis=1
 )
 
+
 # Group by year and expansion status, summing ins_direct
 df_grouped = df_merged.groupby(["year", "expanded"])["uninsured"].sum().reset_index()
+df_grouped['uninsured_expand_per'] = df_grouped['uninsured'] / df_grouped['yearly_total']
 
 # Pivot to get columns for plotting
-df_pivot = df_grouped.pivot(index="year", columns="expanded", values="uninsured")
+df_pivot = df_grouped.pivot(index="year", columns="expanded", values="uninsured_expand_per")
 
 # Plotting
 plt.figure(figsize=(10, 6))
@@ -100,6 +102,7 @@ df_pivot.plot(marker='o', linewidth=2)
 plt.title("Uninsured Population Relative to Medicaid Expansion")
 plt.ylabel("Total Uninsured")
 plt.xlabel("Year")
+plt.gca().yaxis.set_major_formatter(PercentFormatter(xmax=1))  # use 100 if your values are 0–100
 plt.grid(True)
 plt.tight_layout()
 plt.legend(title="Medicaid Expansion Status")
