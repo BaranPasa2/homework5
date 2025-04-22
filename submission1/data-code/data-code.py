@@ -10,7 +10,7 @@ medicaid = pd.read_csv("data/output/acs_medicaid.txt", sep="\t")
 medicaid_expansion = pd.read_csv("data/output/medicaid_expansion.txt", sep="\t")
 
 # Point 1:
-print(insurance.head())
+
 insur_per_year = insurance.copy()
 insur_per_year = insur_per_year.groupby('year', as_index=False)['ins_direct'].sum()
 
@@ -80,7 +80,6 @@ df_exp = df_exp[["State", "expand_year"]]
 
 # Merge with insurance data
 df_merged = pd.merge(df_ins, df_exp, on="State", how="left")
-df_merged = pd.merge(df_merged, insur_totals[['year', 'yearly_total']], on="year", how='left')
 # Label whether a state was expanded that year or not
 df_merged["expanded"] = df_merged.apply(
     lambda row: "Expansion" if pd.notna(row["expand_year"]) and row["year"] >= row["expand_year"]
@@ -91,6 +90,7 @@ df_merged["expanded"] = df_merged.apply(
 
 # Group by year and expansion status, summing ins_direct
 df_grouped = df_merged.groupby(["year", "expanded"])["uninsured"].sum().reset_index()
+df_grouped = pd.merge(df_grouped, insur_totals[['year', 'yearly_total']], on="year", how='left')
 df_grouped['uninsured_expand_per'] = df_grouped['uninsured'] / df_grouped['yearly_total']
 
 # Pivot to get columns for plotting
