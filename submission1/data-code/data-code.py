@@ -35,7 +35,6 @@ insur_per_year = pd.merge(
     )
 
 insur_per_year['ins_direct_percent'] = insur_per_year['ins_direct'] / insur_per_year['yearly_total']
-print(insur_per_year.head())
 
 plt.figure(figsize=(10, 6))
 plt.plot(insur_per_year["year"], insur_per_year["ins_direct_percent"], marker='o', linewidth=2)
@@ -103,6 +102,7 @@ plt.title("Uninsured Population Relative to Medicaid Expansion")
 plt.ylabel("Total Uninsured")
 plt.xlabel("Year")
 plt.gca().yaxis.set_major_formatter(PercentFormatter(xmax=1))  # use 100 if your values are 0–100
+plt.axvline(x=2014, color='red', linestyle='--', linewidth=2, label='ACA Medicaid Expansion (2014)')
 plt.grid(True)
 plt.tight_layout()
 plt.legend(title="Medicaid Expansion Status")
