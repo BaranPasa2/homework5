@@ -31,13 +31,14 @@ from matplotlib.ticker import PercentFormatter
 import seaborn as sns
 from scipy.stats import pearsonr
 import numpy as np
+import statsmodels.formula.api as smf
 insurance = pd.read_csv('/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/acs_insurance.txt', sep="\t")
 medicaid = pd.read_csv("/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/acs_medicaid.txt", sep="\t")
 medicaid_expansion = pd.read_csv("/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/medicaid_expansion.txt", sep="\t")
 
 ```
 
-### Summarizing the Data:
+## Summarizing the Data:
 
 #### 1.
 ```{python}
@@ -83,6 +84,9 @@ plt.show()
 ```
 
 #### 2.
+Following Medicaid expansion in 2014, there was a decline in the rate of direct purchase health insurance in many states. This drop may be partly attributed to the increased availability and generosity of Medicaid coverage, which provided a free or low-cost alternative to plans purchased on the individual market. 
+
+Additionally, changes in federal policies, such as the reduction of outreach funding and the repeal of the individual mandate penalty in 2017, may have discouraged enrollment in marketplace plans. The shrinking pool of healthy individuals likely increased premiums, further destabilizing the direct purchase market.
 
 #### 3.
 ```{python}
@@ -150,6 +154,8 @@ plt.legend(title="Medicaid Expansion Status")
 plt.show()
 ```
 
+## Estimating ATEs
+
 #### 5.
 ```{python}
 # Load insurance and Medicaid expansion data
@@ -175,4 +181,34 @@ dd_table = dd_table.round(2)
 dd_table.index = ["2012", "2015"]
 print(dd_table)
 
+```
+
+#### 6. 
+```{python}
+insurance_df = insurance.copy()
+medicaid_df = medicaid.copy()
+
+# Merge data
+df = pd.merge(insurance_df, medicaid_df[['State', 'year', 'expand', 'expand_year']], 
+              on=['State', 'year'], how='left')
+
+# Filter to only 2014 expanders and never-expanders
+df['treat_group'] = df['expand_year'] == 2014
+df['control_group'] = df['expand'] == False
+df = df[df['treat_group'] | df['control_group']]
+
+# Treatment indicator
+df['treated'] = df['treat_group'].astype(int)
+df['post'] = (df['year'] >= 2014).astype(int)
+df['did'] = df['treated'] * df['post']
+df['uninsured_rate'] = df['uninsured'] / df['adult_pop']
+
+# Run DiD regression with fixed effects for state and year
+model = smf.ols(
+    formula='uninsured_rate ~ treated + post + did + C(State) + C(year)',
+    data=df
+).fit(cov_type='cluster', cov_kwds={'groups': df['State']})
+
+model.summary()
+print(model.summary())
 ```

@@ -4,7 +4,7 @@ from matplotlib.ticker import PercentFormatter
 import seaborn as sns
 from scipy.stats import pearsonr
 import numpy as np
-import pyfixest as pf
+import statsmodels.formula.api as smf
 
 
 insurance = pd.read_csv('data/output/acs_insurance.txt', sep="\t")
@@ -37,3 +37,31 @@ dd_table.index = ["2012", "2015"]
 print(dd_table)
 
 # Point 6:
+
+# Load the datasets
+insurance_df = pd.read_csv("data/output/acs_insurance.txt", sep="\t")
+medicaid_df = pd.read_csv("data/output/acs_medicaid.txt", sep="\t")
+
+# Merge data
+df = pd.merge(insurance_df, medicaid_df[['State', 'year', 'expand', 'expand_year']], 
+              on=['State', 'year'], how='left')
+
+# Filter to only 2014 expanders and never-expanders
+df['treat_group'] = df['expand_year'] == 2014
+df['control_group'] = df['expand'] == False
+df = df[df['treat_group'] | df['control_group']]
+
+# Treatment indicator
+df['treated'] = df['treat_group'].astype(int)
+df['post'] = (df['year'] >= 2014).astype(int)
+df['did'] = df['treated'] * df['post']
+df['uninsured_rate'] = df['uninsured'] / df['adult_pop']
+
+# Run DiD regression with fixed effects for state and year
+model = smf.ols(
+    formula='uninsured_rate ~ treated + post + did + C(State) + C(year)',
+    data=df
+).fit(cov_type='cluster', cov_kwds={'groups': df['State']})
+
+model.summary()
+print(model.summary())
