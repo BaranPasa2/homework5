@@ -35,3 +35,5 @@ dd_table = dd_table * 100
 dd_table = dd_table.round(2)
 dd_table.index = ["2012", "2015"]
 print(dd_table)
+
+# Point 6:
