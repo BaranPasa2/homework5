@@ -1,0 +1,329 @@
+---
+title: "Homework 4 - Submission 1"
+subtitle: "ECON 470"
+author: "Baran Pasa"
+execute:
+  echo: false
+format:
+  pdf:
+    output-file: "pasa-b-hwk5-2"
+    output-exit: "pdf"
+    code-fold: true
+    highlight-style: github
+    include-in-header:
+      text: |
+        \addtokomafont{disposition}{\rmfamily}
+
+jupyter: python3
+
+---
+
+# Homework 5 
+### [Link to Github]('https://github.com/BaranPasa2/homework5') 
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Importing the libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import pyfixest as pf
+from IPython.display import Markdown, display
+import warnings
+warnings.simplefilter('ignore')
+
+# To run in the terminal:
+# python data-code/_BuildFinalData.py
+
+# Matplotlib settings
+# Disable retina scaling
+%config InlineBackend.figure_format = 'png'
+
+# Set default figure size (optional but highly recommended for regular size)
+plt.rcParams.update({
+    "figure.figsize": (6, 4),  # or (width, height) in inches
+    "text.usetex": True,
+})
+
+# Color definitions
+blue = '#002878'
+green = '#008000'
+```
+
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Load data
+git_path = "https://github.com/imccart/Insurance-Access/raw/refs/heads/master/data/output/"
+final_data = pd.read_csv(git_path + "acs_medicaid.txt", sep="\t")
+
+# Create percentage variables
+final_data = (
+    final_data.assign(
+        perc_private=(final_data["ins_employer"] + final_data["ins_direct"]) / final_data["adult_pop"],
+        perc_public=(final_data["ins_medicare"] + final_data["ins_medicaid"]) / final_data["adult_pop"],
+        perc_ins=(final_data["adult_pop"] - final_data["uninsured"]) / final_data["adult_pop"],
+        perc_unins=final_data["uninsured"] / final_data["adult_pop"],
+        perc_employer=final_data["ins_employer"] / final_data["adult_pop"],
+        perc_medicaid=final_data["ins_medicaid"] / final_data["adult_pop"],
+        perc_medicare=final_data["ins_medicare"] / final_data["adult_pop"],
+        perc_direct=final_data["ins_direct"] / final_data["adult_pop"],
+    )
+    .loc[~final_data["State"].isin(["Puerto Rico", "District of Columbia"])]
+)
+```
+{{< pagebreak >}}
+
+## 1.
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Plot share of direct purchase
+direct_summary = final_data.groupby("year")["perc_direct"].mean().reset_index()
+
+plt.figure(figsize=(8, 5))
+plt.plot(direct_summary["year"], direct_summary["perc_direct"], marker="o", color=green)
+plt.axvline(x=2013.5, color="black", linestyle="--")
+plt.xlabel("")
+plt.ylabel("Fraction with Direct Purchase", fontsize=12)
+plt.title("Share of Direct Purchase Insurance over Time", fontsize=16)
+plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
+plt.show()
+```
+## 2.
+The share of direct purchase health insurance rose after the Affordable Care Act exchanges launched in 2014 but began declining after 2016. Key reasons include the 2017 repeal of the individual mandate penalty, which reduced incentives for healthy individuals to buy coverage. The expansion of short-term health plans also drew healthier people away from ACA-compliant markets. Cuts to outreach funding and the end of federal cost-sharing payments further destabilized the individual insurance market.
+
+## 3.
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Plot share of Medicaid
+medicaid_summary = final_data.groupby("year")["perc_medicaid"].mean().reset_index()
+
+plt.figure(figsize=(8, 5))
+plt.plot(medicaid_summary["year"], medicaid_summary["perc_medicaid"], marker="o", color=green)
+plt.axvline(x=2013.5, color="black", linestyle="--")
+plt.title("Share of Medicaid Insurance over Time", fontsize=16)
+plt.xlabel("")
+plt.ylabel("Fraction with Medicaid", fontsize=12)
+plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
+plt.show()
+```
+
+## 4.
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Plot share uninsured
+ins_plot_data = final_data[
+    final_data["expand_year"].isna() | (final_data["expand_year"] == 2014)
+]
+ins_plot_summary = (
+    ins_plot_data.groupby(["expand_ever", "year"])["perc_unins"]
+    .mean()
+    .reset_index()
+)
+
+plt.figure(figsize=(8, 5))
+for key, grp in ins_plot_summary.groupby("expand_ever"):
+    plt.plot(grp["year"], grp["perc_unins"], marker="o", label="Expansion" if key else "Non-expansion", color=blue if key else green)
+
+plt.axvline(x=2013.5, color="black", linestyle="--")
+plt.title("Share of Uninsured over Time", fontsize=16)
+plt.xlabel("")
+plt.ylabel("Fraction Uninsured", fontsize=12)
+plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
+plt.legend()
+plt.show()
+```
+{{< pagebreak >}}
+
+## 5. Average Percent Uninsured Individual before and after Expansion
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Difference-in-Differences Table
+reg_data = (
+    final_data.copy()
+    .loc[(final_data["expand_year"].isna()) | (final_data["expand_year"] == 2014)]
+    .loc[final_data["year"].isin([2012, 2015])]
+)
+
+dd_table = (
+    reg_data.groupby(["expand_ever", "year"])["perc_unins"]
+    .mean()
+    .reset_index()
+    .pivot(index="expand_ever", columns="year", values="perc_unins")
+    .rename(columns={2012: "Pre", 2015: "Post"})
+    .reset_index()
+)
+dd_table["Group"] = dd_table["expand_ever"].map({False: "Non-expansion", True: "Expansion"})
+dd_table = dd_table[["Group", "Pre", "Post"]]
+
+def display_markdown_table(df):
+    markdown = df.to_markdown(index=False)
+    display(Markdown(markdown))
+
+display_markdown_table(dd_table.round(3))
+```
+
+## 6. Estimated Effect of Medicaid Expansion on Uninsurance Rate
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# DD Regression (2014 expansion only)
+reg_data = final_data.copy()
+reg_data["post"] = (reg_data["year"] >= 2014).astype(int)
+reg_data["treat"] = reg_data["post"] * reg_data["expand_ever"].astype(int)
+reg_data = reg_data[(reg_data["expand_year"].isna()) | (reg_data["expand_year"] == 2014)]
+
+# OLS regression without FE
+results = []
+results.append(
+    pf.feols("perc_unins ~ post + expand_ever + treat", data=reg_data)
+)
+```
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+results_table = pf.etable(results, type='df',
+                          drop='Intercept', coef_fmt='b (se)')
+results_table = results_table.drop(index=['depvar', 'S.E. type'])
+results_table.columns = ['Standard DD']
+results_table.index = ['Post 2014', 'Expand', 'Post x Expand', 'Num. Obs.', 'R2']
+results_table = results_table.reset_index(names='')
+
+display_markdown_table(results_table)
+```
+
+## 7. State and Year Fixed Effects of Regression
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# FE regression with state and year fixed effects
+results.append(
+    pf.feols("perc_unins ~ treat | State + year", data=reg_data)
+)
+```
+
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+results_table = pf.etable(results, type='df',
+                          drop='Intercept', coef_fmt='b (se)')
+results_table = results_table.drop(index=['depvar', 'S.E. type', 'State', 'year'])
+results_table.columns = ['Standard DD', 'TWFE']
+results_table.index = ['Post 2014', 'Expand', 'Post x Expand', 'Num. Obs.', 'R2']
+results_table = results_table.reset_index(names='')
+
+display_markdown_table(results_table)
+```
+
+## 8. Repeated Regression with all states
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# DD with time-varying treatment
+reg_data2 = final_data.copy()
+reg_data2["treat"] = 0
+reg_data2.loc[(reg_data2["year"] >= reg_data2["expand_year"]) & (reg_data2["expand_year"].notna()), "treat"] = 1
+
+results.append(
+    pf.feols("perc_unins ~ treat | State + year", data=reg_data2)
+)
+```
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+results_table = pf.etable(results, type='df',
+                          drop='Intercept', coef_fmt='b (se)')
+results_table = results_table.drop(index=['depvar', 'S.E. type', 'State', 'year'])
+results_table.columns = ['Standard DD', 'TWFE', 'Time-varying Treatment']
+results_table.index = ['Post 2014', 'Expand', 'Post x Expand', 'Num. Obs.', 'R2']
+results_table = results_table.reset_index(names='')
+display_markdown_table(results_table)
+```
+
+## 9.
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Event Study with constant treatment
+reg_data["relative_year"] = (reg_data["year"] - reg_data["expand_year"]).fillna(np.inf)
+
+dynamic_twfe = pf.feols("perc_unins ~ i(relative_year, ref=-1) | State + year",
+                 data=reg_data, vcov={"CRV1": "State"})
+plt.figure(figsize=(8, 5))
+joint_ci = dynamic_twfe.coef() - dynamic_twfe.confint(joint=True).T.iloc[0, :]
+plt.errorbar(np.delete(np.arange(2012, 2020), 1), dynamic_twfe.coef(), 
+             yerr=joint_ci, fmt='o', color=blue, capsize=5)
+plt.axvline(x=2013, color="gold", linestyle="--")
+plt.axhline(y=0, color="black", linestyle="-")
+plt.title("Event Study with Common Treatment Time", fontsize=16)
+plt.ylabel("Coefficient", fontsize=12)
+plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
+plt.show()
+```
+
+## 10.
+```{python}
+#| echo: false         
+#| output: true      
+#| warning: false     
+#| message: false     
+# Importing the libraries
+# Event Study with constant treatment
+reg_data["relative_year"] = (reg_data["year"] - reg_data["expand_year"]).fillna(np.inf)
+
+dynamic_twfe = pf.feols("perc_unins ~ i(relative_year, ref=-1) | State + year",
+                 data=reg_data, vcov={"CRV1": "State"})
+plt.figure(figsize=(8, 5))
+joint_ci = dynamic_twfe.coef() - dynamic_twfe.confint(joint=True).T.iloc[0, :]
+plt.errorbar(np.delete(np.arange(2012, 2020), 1), dynamic_twfe.coef(), 
+             yerr=joint_ci, fmt='o', color=blue, capsize=5)
+plt.axvline(x=2013, color="gold", linestyle="--")
+plt.axhline(y=0, color="black", linestyle="-")
+plt.title("Event Study with Common Treatment Time", fontsize=16)
+plt.ylabel("Coefficient", fontsize=12)
+plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
+plt.show()
+```

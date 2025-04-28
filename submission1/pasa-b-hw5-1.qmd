@@ -25,13 +25,14 @@ jupyter: python3
 #| output: true      
 #| warning: false     
 #| message: false     
+# Importing the libraries
 import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.ticker import PercentFormatter
-import seaborn as sns
-from scipy.stats import pearsonr
 import numpy as np
-import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+import pyfixest as pf
+from IPython.display import Markdown, display
+import warnings
+warnings.simplefilter('ignore')
 insurance = pd.read_csv('/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/acs_insurance.txt', sep="\t")
 medicaid = pd.read_csv("/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/acs_medicaid.txt", sep="\t")
 medicaid_expansion = pd.read_csv("/Users/baranpasa/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Emory/Junior Year/Junior Spring/ECON 470/ECON 470 Python /homework5/homework5/data/output/medicaid_expansion.txt", sep="\t")
