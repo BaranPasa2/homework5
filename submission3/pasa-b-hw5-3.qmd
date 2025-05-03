@@ -99,6 +99,10 @@ plt.title("Share of Direct Purchase Insurance over Time", fontsize=16)
 plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
 plt.show()
 ```
+
+As shown in the graph above, direct purhcases increased significantly between 2013 and 2015. This is after the expansion which happened halfway through 2013. 
+{{< pagebreak >}}
+
 ## 2.
 The share of direct purchase health insurance rose after the Affordable Care Act exchanges launched in 2014 but began declining after 2016. Key reasons include the 2017 repeal of the individual mandate penalty, which reduced incentives for healthy individuals to buy coverage. The expansion of short-term health plans also drew healthier people away from ACA-compliant markets. Cuts to outreach funding and the end of federal cost-sharing payments further destabilized the individual insurance market.
 
@@ -121,6 +125,7 @@ plt.ylabel("Fraction with Medicaid", fontsize=12)
 plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
 plt.show()
 ```
+Assessing the graph above, there is a clear increase in medicaid insurance over time. This increase happened after the ACA expansion, indicating that it increased the access to Medicaid. 
 
 ## 4.
 ```{python}
@@ -151,6 +156,8 @@ plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
 plt.legend()
 plt.show()
 ```
+Despite the indications from the prior graphs, graph 4 shows the similar trends between expasion and non-expansion states. Uninsurnace rates go down in both states, but non-expansion and expansion states follow a similar trend. 
+
 {{< pagebreak >}}
 
 ## 5. Average Percent Uninsured Individual before and after Expansion
@@ -185,6 +192,8 @@ def display_markdown_table(df):
 display_markdown_table(dd_table.round(3))
 ```
 
+The difference-in-differences estimate is -0.018, showing a greater reduction in the uninsured rate in expansion states relative to non-expansion states between 2012 and 2015.
+
 ## 6. Estimated Effect of Medicaid Expansion on Uninsurance Rate
 ```{python}
 #| echo: false         
@@ -204,6 +213,7 @@ results.append(
     pf.feols("perc_unins ~ post + expand_ever + treat", data=reg_data)
 )
 ```
+
 ```{python}
 #| echo: false         
 #| output: true      
@@ -219,6 +229,8 @@ results_table = results_table.reset_index(names='')
 
 display_markdown_table(results_table)
 ```
+From the regression table, the coefficient on Post × Expand is -0.020 with a standard error of 0.010, indicating a 2 percentage point drop in the uninsured rate attributable to Medicaid expansion. This estimate is statistically significant at the 10% level (p < 0.1), supporting a modest but measurable effect.
+
 {{< pagebreak >}}
 
 
@@ -250,6 +262,9 @@ results_table = results_table.reset_index(names='')
 
 display_markdown_table(results_table)
 ```
+
+With state and year fixed effects included using a Two-Way Fixed Effects (TWFE) regression (as shown in column "TWFE"), the estimated impact of Medicaid expansion on the uninsured rate remains -0.020, but the precision improves (standard error drops to 0.007, significant at 5%).
+
 
 ## 8. Repeated Regression with all states
 ```{python}
@@ -308,6 +323,9 @@ plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
 plt.show()
 ```
 
+The event study shows no significant differences in 2012, supporting the parallel trends assumption. Starting in 2014, Medicaid expansion is associated with a consistent decrease in uninsurance, though the effects are imprecisely estimated year-to-year.
+
+
 ## 10.
 ```{python}
 #| echo: false         
@@ -331,3 +349,4 @@ plt.ylabel("Coefficient", fontsize=12)
 plt.grid(axis='y', color='gray', linestyle='--', alpha=0.5)
 plt.show()
 ```
+This event study aligns all states by their Medicaid expansion year, allowing inclusion of late expanders using event time. The trend remains consistently negative post-expansion, reinforcing the conclusion that expansion reduced uninsurance, though the estimates remain noisy.
